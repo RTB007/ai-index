@@ -18,10 +18,11 @@ def export(cfg: dict) -> None:
     out_p = config.export_path(cfg)
     out_p.parent.mkdir(parents=True, exist_ok=True)
 
+    from ai_index import scoring
     with db.connect(db_p) as conn:
         payload = {
             "generated_at": datetime.now(timezone.utc).isoformat(),
-            "prompt_version": cfg["scoring"]["prompt_version"],
+            "prompt_version": scoring.PROMPT_VERSION,
             "scores": db.scores_all(conn),
             "indicators": db.indicators_all(conn),
             "stocks": db.stocks_all(conn),

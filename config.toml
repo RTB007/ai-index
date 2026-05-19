@@ -10,9 +10,9 @@ json_path = "web/data.json"
 # Path to the claude CLI. On Linux server typically just "claude".
 # Override per environment if needed.
 claude_bin = "claude"
-prompt_version = 1
 # Window size (days) of indicator history Claude sees when scoring today.
 window_days = 30
+# Note: rubric version lives in ai_index/scoring.py:PROMPT_VERSION (single source of truth).
 
 [stocks]
 # Benchmark used to compute basket-vs-market relative returns.

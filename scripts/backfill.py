@@ -86,7 +86,7 @@ def main() -> int:
                             result["score"],
                             result["rationale"],
                             result["components"],
-                            cfg["scoring"]["prompt_version"],
+                            scoring.PROMPT_VERSION,
                         )
                     scored += 1
                     log.info("scored %s = %d", cur, result["score"])
