@@ -36,8 +36,8 @@ geo = ""  # worldwide
 
 [indicators.hackernews]
 enabled = true
-# Algolia HN search; daily story count matching any of these terms in title.
-query = "AI OR LLM OR GPT OR Claude OR Gemini OR AGI"
+# Algolia HN search; daily story count matching ANY of these keywords (OR-union via optionalWords).
+keywords = ["AI", "LLM", "GPT", "ChatGPT", "Claude", "Gemini", "AGI"]
 
 [indicators.arxiv]
 enabled = true

@@ -25,12 +25,16 @@ def _day_bounds(d: date) -> tuple[int, int]:
 def collect(
     start_date: date, end_date: date, cfg: dict
 ) -> Iterator[tuple[str, str, float, dict | None]]:
-    query = cfg["indicators"]["hackernews"]["query"]
+    keywords = cfg["indicators"]["hackernews"]["keywords"]
+    # Algolia treats `query` as AND across tokens by default. `optionalWords`
+    # turns each keyword into an OR-clause so we count the union.
+    kw_str = " ".join(keywords)
     cur = start_date
     while cur <= end_date:
         lo, hi = _day_bounds(cur)
         params = {
-            "query": query,
+            "query": kw_str,
+            "optionalWords": kw_str,
             "tags": "story",
             "numericFilters": f"created_at_i>={lo},created_at_i<={hi}",
             "hitsPerPage": 0,
@@ -40,9 +44,9 @@ def collect(
                 r = requests.get(ENDPOINT, params=params, timeout=30)
                 r.raise_for_status()
                 count = r.json().get("nbHits", 0)
-                yield cur.isoformat(), INDICATOR, float(count), {"query": query}
+                yield cur.isoformat(), INDICATOR, float(count), {"keywords": keywords}
                 break
-            except Exception as e:
+            except Exception:
                 if attempt == 2:
                     raise
                 time.sleep(2**attempt)
