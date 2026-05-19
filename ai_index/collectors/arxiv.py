@@ -23,7 +23,10 @@ INDICATOR = "arxiv_ai_submissions"
 ENDPOINT = "https://export.arxiv.org/api/query"
 HEADERS = {"User-Agent": "ai-index/0.1 (+https://github.com/RTB007/ai-index)"}
 _TOTAL_RE = re.compile(r"<opensearch:totalResults[^>]*>(\d+)</opensearch:totalResults>")
-_INLINE_ERROR = re.compile(r"<title>\s*Error\s*</title>|server (encountered|is overloaded)", re.I)
+_INLINE_ERROR = re.compile(
+    r"<title>\s*Error\s*</title>|server (encountered|is overloaded)|rate exceeded", re.I
+)
+_RATE_LIMITED = re.compile(r"rate exceeded", re.I)
 
 
 def _count_for_day(d: date, categories: list[str]) -> int:
@@ -39,6 +42,11 @@ def _count_for_day(d: date, categories: list[str]) -> int:
             r = requests.get(ENDPOINT, params=params, headers=HEADERS, timeout=30)
             r.raise_for_status()
             text = r.text
+            if _RATE_LIMITED.search(text):
+                # Hard rate-limit: long cooldown before next attempt.
+                last_err = RuntimeError("arxiv rate limited")
+                time.sleep(60 + attempt * 30)
+                continue
             if _INLINE_ERROR.search(text):
                 raise RuntimeError("arxiv returned in-band server error")
             m = _TOTAL_RE.search(text)
@@ -47,8 +55,10 @@ def _count_for_day(d: date, categories: list[str]) -> int:
             last_err = e
             if attempt == 3:
                 raise
-            time.sleep(3 + attempt * 5)  # 3s, 8s, 13s
-    raise last_err  # unreachable
+            time.sleep(5 + attempt * 10)  # 5, 15, 25s
+    if last_err:
+        raise last_err
+    return 0
 
 
 def collect(

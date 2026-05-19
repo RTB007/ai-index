@@ -20,7 +20,17 @@ INDICATOR = "gdelt_ai_volume"
 ENDPOINT = "https://api.gdeltproject.org/api/v2/doc/doc"
 HEADERS = {"User-Agent": "ai-index/0.1 (+https://github.com/RTB007/ai-index)"}
 # (connect_timeout, read_timeout) — connect short so a hung TLS gets retried fast.
-TIMEOUT = (10, 90)
+TIMEOUT = (15, 90)
+# GDELT explicitly asks for ≤1 request / 5s. We pace at 6s between any call.
+MIN_INTERVAL = 6.0
+_last_call_at: list[float] = [0.0]
+
+
+def _pace() -> None:
+    elapsed = time.monotonic() - _last_call_at[0]
+    if elapsed < MIN_INTERVAL:
+        time.sleep(MIN_INTERVAL - elapsed)
+    _last_call_at[0] = time.monotonic()
 
 
 def _fetch_chunk(query: str, start: date, end: date) -> dict | None:
@@ -34,16 +44,20 @@ def _fetch_chunk(query: str, start: date, end: date) -> dict | None:
     }
     for attempt in range(5):
         try:
+            _pace()
             r = requests.get(ENDPOINT, params=params, headers=HEADERS, timeout=TIMEOUT)
             r.raise_for_status()
             text = r.text.strip()
             if not text:
                 raise RuntimeError("gdelt returned empty body")
+            # Rate-limit messages come back as text/plain HTTP 200.
+            if "limit requests" in text.lower() or "rate" in text.lower()[:200]:
+                raise RuntimeError(f"gdelt rate limited: {text[:120]!r}")
             return r.json()
         except Exception:
             if attempt == 4:
                 raise
-            time.sleep(5 + attempt * 10)  # 5, 15, 25, 35s
+            time.sleep(10 + attempt * 15)  # 10, 25, 40, 55s
     return None
 
 
@@ -80,4 +94,4 @@ def collect(
             yield d_iso, INDICATOR, daily[d_iso], {"query": query}
 
         cur = chunk_end + timedelta(days=1)
-        time.sleep(1)
+        # Inter-chunk pause handled by _pace() on next call; no extra sleep needed.
