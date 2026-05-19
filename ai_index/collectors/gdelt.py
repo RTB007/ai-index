@@ -1,10 +1,12 @@
 """GDELT DOC 2.0 daily article volume.
 
 Indicator name: gdelt_ai_volume
-Value: daily article volume percentage from GDELT TimelineVol output.
+Value: aggregated daily article volume value from GDELT TimelineVol output.
 Backfillable: yes (GDELT 2.0 starts 2015).
 
-DOC 2.0 docs: https://blog.gdeltproject.org/gdelt-doc-2-0-api-debuts/
+GDELT's API is intermittently flaky — TLS handshakes hang silently from some IPs.
+We retry with bigger backoffs and a shorter connect timeout so a stuck attempt
+doesn't burn the whole window.
 """
 from __future__ import annotations
 
@@ -16,43 +18,60 @@ import requests
 
 INDICATOR = "gdelt_ai_volume"
 ENDPOINT = "https://api.gdeltproject.org/api/v2/doc/doc"
+HEADERS = {"User-Agent": "ai-index/0.1 (+https://github.com/RTB007/ai-index)"}
+# (connect_timeout, read_timeout) — connect short so a hung TLS gets retried fast.
+TIMEOUT = (10, 90)
+
+
+def _fetch_chunk(query: str, start: date, end: date) -> dict | None:
+    params = {
+        "query": query,
+        "mode": "timelinevol",
+        "format": "json",
+        "startdatetime": datetime.combine(start, dtime.min).strftime("%Y%m%d%H%M%S"),
+        "enddatetime": datetime.combine(end, dtime.max).strftime("%Y%m%d%H%M%S"),
+        "timelinesmooth": 0,
+    }
+    for attempt in range(5):
+        try:
+            r = requests.get(ENDPOINT, params=params, headers=HEADERS, timeout=TIMEOUT)
+            r.raise_for_status()
+            text = r.text.strip()
+            if not text:
+                raise RuntimeError("gdelt returned empty body")
+            return r.json()
+        except Exception:
+            if attempt == 4:
+                raise
+            time.sleep(5 + attempt * 10)  # 5, 15, 25, 35s
+    return None
 
 
 def collect(
     start_date: date, end_date: date, cfg: dict
 ) -> Iterator[tuple[str, str, float, dict | None]]:
     query = cfg["indicators"]["gdelt"]["query"]
-    # GDELT TimelineVol returns the whole range in one request; chunk by 6 months to stay safe.
-    chunk = timedelta(days=180)
+    # Chunk by 60 days — keeps response size manageable and recovers faster on flake.
+    chunk = timedelta(days=60)
     cur = start_date
     while cur <= end_date:
         chunk_end = min(cur + chunk, end_date)
-        params = {
-            "query": query,
-            "mode": "timelinevol",
-            "format": "json",
-            "startdatetime": datetime.combine(cur, dtime.min).strftime("%Y%m%d%H%M%S"),
-            "enddatetime": datetime.combine(chunk_end, dtime.max).strftime("%Y%m%d%H%M%S"),
-            "timelinesmooth": 0,
-        }
-        for attempt in range(3):
-            try:
-                r = requests.get(ENDPOINT, params=params, timeout=60)
-                r.raise_for_status()
-                data = r.json()
-                break
-            except Exception:
-                if attempt == 2:
-                    raise
-                time.sleep(2**attempt)
+        try:
+            data = _fetch_chunk(query, cur, chunk_end)
+        except Exception:
+            cur = chunk_end + timedelta(days=1)
+            time.sleep(2)
+            continue
+        if data is None:
+            cur = chunk_end + timedelta(days=1)
+            continue
 
-        # Response: {"timeline": [{"data": [{"date": "20240115T000000Z", "value": 0.123}, ...]}]}
-        # Aggregate to daily (GDELT may return 15-min bins; sum per day).
+        # Response: {"timeline":[{"data":[{"date":"YYYYMMDDTHHMMSSZ","value":N},...]}]}
+        # GDELT returns 15-min bins; sum to daily.
         daily: dict[str, float] = {}
         for series in data.get("timeline", []):
             for pt in series.get("data", []):
                 raw = pt.get("date", "")
-                # Format: YYYYMMDDTHHMMSSZ
                 if len(raw) >= 8:
                     d_iso = f"{raw[0:4]}-{raw[4:6]}-{raw[6:8]}"
                     daily[d_iso] = daily.get(d_iso, 0.0) + float(pt.get("value", 0.0))
