@@ -1,0 +1,7 @@
+# Alternative for Caddy users — paste into your Caddyfile.
+ai-index.lowlandcapital.com {
+    root * /home/CHANGE_ME/ai-index/web
+    file_server
+    encode gzip
+    header /data.json Cache-Control "no-cache, must-revalidate"
+}

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Fantasy Index</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <header>
+    <h1>AI Fantasy Index</h1>
+    <p class="sub">Daily 0–100 score for AI-market heat, scored by Claude on early indicators. Plotted against a basket of AI stocks (rebased to 100).</p>
+  </header>
+
+  <section class="latest">
+    <div class="score-card">
+      <div class="score-num" id="latest-score">–</div>
+      <div class="score-label">latest score</div>
+      <div class="score-date" id="latest-date">–</div>
+    </div>
+    <div class="rationale">
+      <h3>Today's read</h3>
+      <p id="latest-rationale">Loading…</p>
+    </div>
+  </section>
+
+  <section class="chart-wrap">
+    <canvas id="main-chart"></canvas>
+  </section>
+
+  <section class="components">
+    <h3>Indicator sub-scores (latest)</h3>
+    <canvas id="components-chart"></canvas>
+  </section>
+
+  <footer>
+    <span id="generated">–</span> ·
+    <a href="https://github.com/RTB007/ai-index">source</a>
+  </footer>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

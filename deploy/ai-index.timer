@@ -1,0 +1,12 @@
+[Unit]
+Description=Run ai-index daily
+
+[Timer]
+# Run shortly after midnight UTC, with a randomised delay so we don't
+# hammer the upstream APIs in lockstep with everyone else.
+OnCalendar=*-*-* 03:15:00
+RandomizedDelaySec=30min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

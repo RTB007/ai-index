@@ -1,0 +1,65 @@
+# ai-index configuration
+
+[db]
+path = "data/ai_index.db"
+
+[export]
+json_path = "web/data.json"
+
+[scoring]
+# Path to the claude CLI. On Linux server typically just "claude".
+# Override per environment if needed.
+claude_bin = "claude"
+prompt_version = 1
+# Window size (days) of indicator history Claude sees when scoring today.
+window_days = 30
+
+[stocks]
+# Daily close pulled via yfinance. Plotted alongside the fantasy index.
+tickers = [
+    "NVDA",   # GPU king
+    "MSFT",   # OpenAI exposure
+    "GOOGL",  # Gemini
+    "META",   # Llama, infra spend
+    "AMD",    # MI300 / accelerators
+    "PLTR",   # AI/enterprise hype proxy
+    "AVGO",   # custom AI silicon
+    "TSM",    # foundry
+    "BOTZ",   # AI/robotics ETF
+]
+
+[indicators.trends]
+enabled = true
+# Google Trends keywords; one composite value per day (mean of normalized series).
+keywords = ["AI", "ChatGPT", "AGI", "Claude AI", "Gemini AI"]
+geo = ""  # worldwide
+
+[indicators.hackernews]
+enabled = true
+# Algolia HN search; daily story count matching any of these terms in title.
+query = "AI OR LLM OR GPT OR Claude OR Gemini OR AGI"
+
+[indicators.arxiv]
+enabled = true
+# Daily submission count to these categories.
+categories = ["cs.AI", "cs.LG", "cs.CL"]
+
+[indicators.gdelt]
+enabled = true
+# GDELT DOC 2.0 query; daily article volume matching theme.
+query = "(artificial intelligence) OR ChatGPT OR \"large language model\""
+
+[indicators.github_stars]
+enabled = false   # needs token, off by default
+repos = [
+    "langchain-ai/langchain",
+    "ggerganov/llama.cpp",
+    "huggingface/transformers",
+    "openai/whisper",
+]
+
+[indicators.reddit]
+enabled = false   # needs creds
+
+[indicators.producthunt]
+enabled = false   # needs token

@@ -1,0 +1,16 @@
+[Unit]
+Description=ai-index daily collection + scoring
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/ai-index
+ExecStart=%h/ai-index/.venv/bin/python -m scripts.daily
+StandardOutput=journal
+StandardError=journal
+# Soft cap so a runaway Claude call can't hang forever.
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target
