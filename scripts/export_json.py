@@ -26,6 +26,12 @@ def export(cfg: dict) -> None:
             "indicators": db.indicators_all(conn),
             "stocks": db.stocks_all(conn),
             "tickers": cfg["stocks"]["tickers"],
+            "baskets": {
+                "main": cfg["stocks"].get("tickers", []),
+                "power": cfg["stocks"].get("power_basket", []),
+                "gpu": cfg["stocks"].get("gpu_basket", []),
+            },
+            "benchmark": cfg["stocks"].get("benchmark"),
         }
     with out_p.open("w", encoding="utf-8") as f:
         json.dump(payload, f, separators=(",", ":"))

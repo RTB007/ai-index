@@ -6,7 +6,7 @@ import sys
 from datetime import date
 from typing import Iterator
 
-from ai_index.collectors import arxiv, gdelt, hackernews, stocks, trends
+from ai_index.collectors import arxiv, gdelt, gpu_spot, hackernews, stocks, trends
 
 log = logging.getLogger("ai_index")
 
@@ -19,12 +19,15 @@ def setup_logging(level: str = "INFO") -> None:
     )
 
 
-# Map config flag -> collector module. Order = run order.
+# Map config key -> collector module. Order = run order.
+# basket_signals is intentionally excluded — it has a different interface
+# (reads from DB) and is driven from daily.py / backfill.py directly.
 COLLECTORS = {
     "trends": trends,
     "hackernews": hackernews,
     "arxiv": arxiv,
     "gdelt": gdelt,
+    "gpu_spot": gpu_spot,
 }
 
 
@@ -43,11 +46,27 @@ def run_indicator_collectors(
             log.exception("collector %s failed: %s", key, e)
 
 
+def all_tickers(cfg: dict) -> list[str]:
+    """Union of all configured baskets + benchmark, deduped, preserving order."""
+    seen: set[str] = set()
+    out: list[str] = []
+    keys = ("tickers", "power_basket", "gpu_basket")
+    for key in keys:
+        for t in cfg["stocks"].get(key, []) or []:
+            if t not in seen:
+                seen.add(t)
+                out.append(t)
+    bench = cfg["stocks"].get("benchmark")
+    if bench and bench not in seen:
+        out.append(bench)
+    return out
+
+
 def run_stocks(
     cfg: dict, start: date, end: date
 ) -> Iterator[tuple[str, str, float, int | None]]:
-    tickers = cfg["stocks"]["tickers"]
-    log.info("collecting stocks %s %s..%s", tickers, start, end)
+    tickers = all_tickers(cfg)
+    log.info("collecting stocks (%d tickers) %s..%s", len(tickers), start, end)
     try:
         yield from stocks.collect(start, end, tickers)
     except Exception as e:

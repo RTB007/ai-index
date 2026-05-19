@@ -15,7 +15,10 @@ prompt_version = 1
 window_days = 30
 
 [stocks]
-# Daily close pulled via yfinance. Plotted alongside the fantasy index.
+# Benchmark used to compute basket-vs-market relative returns.
+benchmark = "SPY"
+
+# Main AI basket: chip + hyperscaler + AI-software plays.
 tickers = [
     "NVDA",   # GPU king
     "MSFT",   # OpenAI exposure
@@ -26,6 +29,25 @@ tickers = [
     "AVGO",   # custom AI silicon
     "TSM",    # foundry
     "BOTZ",   # AI/robotics ETF
+]
+
+# Power basket: utilities/grid exposed to AI datacenter capex (PPAs, nuclear restarts).
+# Indicator: power_vs_spy_30d (relative 30d return) → supply-side heat signal.
+power_basket = [
+    "VST",    # Vistra
+    "CEG",    # Constellation Energy
+    "TLN",    # Talen Energy
+    "GEV",    # GE Vernova (history starts Apr 2024)
+    "NRG",    # NRG Energy
+]
+
+# GPU-cloud basket: pure-play GPU rental businesses.
+# Indicator: gpu_basket_vs_spy_30d → GPU supply-tightness proxy.
+gpu_basket = [
+    "CRWV",   # CoreWeave (IPO Mar 2025)
+    "NBIS",   # Nebius
+    "IREN",   # Iris Energy
+    "APLD",   # Applied Digital
 ]
 
 [indicators.trends]
@@ -63,3 +85,16 @@ enabled = false   # needs creds
 
 [indicators.producthunt]
 enabled = false   # needs token
+
+[indicators.basket_signals]
+# Reads stock_prices to compute basket-vs-SPY 30d relative returns. Cheap, always on.
+enabled = true
+
+[indicators.gpu_spot]
+enabled = true
+# Azure Retail Prices API; no key. Forward-only (no historical backfill).
+skus = [
+    "Standard_ND96amsr_A100_v4",   # 8x A100 80GB
+    "Standard_ND96isr_H100_v5",    # 8x H100 80GB w/ InfiniBand (AI training canonical)
+]
+regions = ["eastus", "eastus2", "westus2", "westus3", "westeurope"]

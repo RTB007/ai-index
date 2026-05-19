@@ -9,6 +9,7 @@ import logging
 from datetime import date, timedelta
 
 from ai_index import config, db, scoring
+from ai_index.collectors import basket_signals
 
 from ._common import run_indicator_collectors, run_stocks, setup_logging
 
@@ -44,7 +45,7 @@ def main() -> int:
     collect_start = args.target - timedelta(days=args.collect_window)
     collect_end = args.target
 
-    n_ind = n_stk = 0
+    n_ind = n_stk = n_bsk = 0
     with db.connect(db_p) as conn:
         for row in run_indicator_collectors(cfg, collect_start, collect_end):
             db.upsert_indicator(conn, *row)
@@ -52,7 +53,10 @@ def main() -> int:
         for d_iso, ticker, close, vol in run_stocks(cfg, collect_start, collect_end):
             db.upsert_stock(conn, d_iso, ticker, close, vol)
             n_stk += 1
-    log.info("upserted indicators=%d stocks=%d", n_ind, n_stk)
+        # Basket-vs-SPY signals depend on stocks being upserted first.
+        if cfg["indicators"].get("basket_signals", {}).get("enabled", False):
+            n_bsk = basket_signals.compute_and_upsert(conn, cfg, collect_start, collect_end)
+    log.info("upserted indicators=%d stocks=%d basket_signals=%d", n_ind, n_stk, n_bsk)
 
     if args.no_score:
         return 0

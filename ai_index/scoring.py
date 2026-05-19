@@ -11,7 +11,7 @@ import re
 import subprocess
 from typing import Any
 
-PROMPT_VERSION = 1
+PROMPT_VERSION = 2
 
 RUBRIC = """\
 You are scoring the "AI fantasy index" — a 0-100 measure of how hot/hyped the AI market currently is.
@@ -23,12 +23,32 @@ ANCHOR your final score to these bands:
   60-80 hot: FOMO, retail flood, IPO/funding storm, mainstream media saturation.
   80-100 mania: bubble territory, speculative excess, even non-tech people talking about it.
 
+The indicators fall into two categories. Score the ALIGNMENT, not just the sum:
+
+DEMAND / ATTENTION (what people are saying):
+  trends_ai_composite, hn_ai_stories, gdelt_ai_volume
+
+SUPPLY / SUBSTRATE (what people are spending real money on):
+  gpu_spot_h100_usd_per_hour, gpu_spot_a100_usd_per_hour  — GPU rental clearing prices
+  power_vs_spy_30d, gpu_basket_vs_spy_30d                 — utility/GPU-cloud stocks vs market
+
+Treat arxiv_ai_submissions (if present) as background research-supply, not heat.
+
+INTERPRETING ALIGNMENT:
+  - Demand high + supply tight (GPU $/hr rising, power & GPU-cloud stocks outperforming SPY)
+    = real mania. Score in the 70+ band.
+  - Demand high + supply slack (GPU $/hr flat or falling, basket signals neutral/negative)
+    = retail froth without enterprise commitment. Cap below 60 even if attention is loud.
+  - Demand fading + supply still tight = quiet build-out phase. Score in the 50-60 band; not
+    cold despite the dropping noise.
+  - Both flat = warm-normal (35-50).
+
 Method:
-- Look at LEVEL (absolute values) AND MOMENTUM (last 7 days vs prior 23 days) of each indicator.
-- A breakout in one indicator alone is weaker signal than coherent moves across multiple.
-- Weight indicators by signal quality: GDELT > Trends > HN > arXiv for retail/general-market heat.
-  (arXiv is a research-supply indicator, not demand. Treat as background, not heat.)
+- Look at LEVEL (absolute values) AND MOMENTUM (last 7d vs prior 23d) per indicator.
+- A coherent move across several indicators beats one isolated breakout.
 - Be honest: if data looks normal, score 30-50. Reserve 70+ for genuine intensity.
+- Note: gpu_spot_* indicators only exist forward from when the collector launched —
+  short history is expected; weight them by momentum once you have ≥14 days.
 """
 
 OUTPUT_INSTRUCTION = """\

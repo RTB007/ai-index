@@ -11,6 +11,7 @@ import time
 from datetime import date, timedelta
 
 from ai_index import config, db, scoring
+from ai_index.collectors import basket_signals
 
 from ._common import run_indicator_collectors, run_stocks, setup_logging
 
@@ -60,6 +61,9 @@ def main() -> int:
                 db.upsert_stock(conn, d_iso, ticker, close, vol)
                 n += 1
             log.info("upserted %d stock rows", n)
+            if cfg["indicators"].get("basket_signals", {}).get("enabled", False):
+                n_bsk = basket_signals.compute_and_upsert(conn, cfg, start, args.end)
+                log.info("upserted %d basket-signal indicator rows", n_bsk)
 
     if args.with_scores:
         log.info("scoring %d days (step %d)", args.days // args.score_step, args.score_step)
