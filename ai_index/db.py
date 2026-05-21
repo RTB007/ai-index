@@ -40,8 +40,12 @@ CREATE INDEX IF NOT EXISTS idx_stock_ticker_date ON stock_prices(ticker, date);
 @contextmanager
 def connect(db_path: Path) -> Iterator[sqlite3.Connection]:
     db_path.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(db_path)
+    # 30s busy-timeout + WAL mode keeps the manual backfills and the systemd
+    # timer from clobbering each other when their wall-clock windows overlap.
+    conn = sqlite3.connect(db_path, timeout=30.0)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA synchronous=NORMAL")
     try:
         yield conn
         conn.commit()
