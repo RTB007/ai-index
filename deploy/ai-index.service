@@ -6,6 +6,9 @@ Wants=network-online.target
 [Service]
 Type=oneshot
 WorkingDirectory=%h/ai-index
+# systemd doesn't source ~/.bashrc, so PATH must be set explicitly
+# for the python script's `claude` subprocess to be found.
+Environment=PATH=%h/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 ExecStart=%h/ai-index/.venv/bin/python -m scripts.daily
 StandardOutput=journal
 StandardError=journal
