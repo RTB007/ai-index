@@ -9,6 +9,21 @@
   // ---- Latest score card ----
   const scores = data.scores || [];
   const latest = scores[scores.length - 1];
+
+  // 7-day average: each day is scored on its own by Claude, so day-to-day the score jumps
+  // several points (avg 5 since rubric v3). The trailing 7-calendar-day mean of the scores
+  // that exist shows the trend; the daily scores stay visible as a thin line underneath.
+  const AVG_DAYS = 7;
+  const avgSeries = scores.map((s, i) => {
+    const t = Date.parse(s.date);
+    const win = [];
+    for (let j = i; j >= 0 && t - Date.parse(scores[j].date) < AVG_DAYS * 864e5; j--) win.push(scores[j].score);
+    return { x: s.date, y: Math.round(win.reduce((a, b) => a + b, 0) / win.length * 10) / 10 };
+  });
+  const latestAvg = avgSeries.length ? avgSeries[avgSeries.length - 1].y : null;
+  const avgEl = document.getElementById("latest-avg");
+  if (avgEl && latestAvg !== null) avgEl.textContent = AVG_DAYS + "-day average: " + latestAvg.toFixed(1);
+
   if (latest) {
     document.getElementById("latest-score").textContent = latest.score;
     document.getElementById("latest-date").textContent = latest.date;
@@ -134,22 +149,36 @@
       .join("");
   }
 
-  const scoreDataset = {
-    label: "AI Fantasy Index",
-    data: scores.map(s => ({ x: s.date, y: s.score, rationale: s.rationale })),
+  const avgDataset = {
+    label: "AI Fantasy Index (" + AVG_DAYS + "-day avg)",
+    isScore: true,
+    data: avgSeries,
     borderColor: "#ff7a45",
     backgroundColor: "rgba(255,122,69,0.12)",
     borderWidth: 3,
     pointRadius: 0,
     pointHoverRadius: 5,
-    tension: 0.2,
+    tension: 0.25,
     fill: true,
     yAxisID: "y1",
   };
+  const dailyDataset = {
+    label: "daily score",
+    isScore: true,
+    data: scores.map(s => ({ x: s.date, y: s.score })),
+    borderColor: "rgba(255,122,69,0.45)",
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    pointRadius: 0,
+    pointHoverRadius: 4,
+    tension: 0,
+    yAxisID: "y1",
+  };
+  const rationaleByDate = Object.fromEntries(scores.map(s => [s.date, s.rationale]));
 
   const mainChart = new Chart(document.getElementById("main-chart"), {
     type: "line",
-    data: { datasets: [scoreDataset, ...stockDatasets, ...tickerDatasets] },
+    data: { datasets: [avgDataset, dailyDataset, ...stockDatasets, ...tickerDatasets] },
     options: {
       responsive: true,
       maintainAspectRatio: false,
@@ -162,9 +191,11 @@
         } },
         tooltip: {
           callbacks: {
+            // Claude's rationale for that day, whichever score line the pointer is nearest to.
             afterBody: (items) => {
-              const it = items.find(i => i.dataset.label === "AI Fantasy Index");
-              return it?.raw?.rationale ? "\n" + it.raw.rationale : "";
+              const it = items.find(i => i.dataset.isScore);
+              const r = it ? rationaleByDate[it.raw.x] : null;
+              return r ? "\n" + r : "";
             },
           },
         },
