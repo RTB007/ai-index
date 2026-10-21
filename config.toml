@@ -98,3 +98,6 @@ skus = [
     "Standard_ND96isr_H100_v5",    # 8x H100 80GB w/ InfiniBand (AI training canonical)
 ]
 regions = ["eastus", "eastus2", "westus2", "westus3", "westeurope"]
+
+[indicators.nebius_spot]
+enabled = true   # marktgedreven spot-prijzen per GPU-uur (Nebius, openbare API, 30 dagen historie)

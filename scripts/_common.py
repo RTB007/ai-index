@@ -6,7 +6,7 @@ import sys
 from datetime import date
 from typing import Iterator
 
-from ai_index.collectors import arxiv, gdelt, gpu_spot, hackernews, stocks, trends
+from ai_index.collectors import arxiv, gdelt, gpu_spot, hackernews, nebius_spot, stocks, trends
 
 log = logging.getLogger("ai_index")
 
@@ -28,6 +28,7 @@ COLLECTORS = {
     "arxiv": arxiv,
     "gdelt": gdelt,
     "gpu_spot": gpu_spot,
+    "nebius_spot": nebius_spot,
 }
 
 

@@ -11,7 +11,7 @@ import re
 import subprocess
 from typing import Any
 
-PROMPT_VERSION = 2
+PROMPT_VERSION = 3
 
 RUBRIC = """\
 You are scoring the "AI fantasy index" — a 0-100 measure of how hot/hyped the AI market currently is.
@@ -29,7 +29,8 @@ DEMAND / ATTENTION (what people are saying):
   trends_ai_composite, hn_ai_stories, gdelt_ai_volume
 
 SUPPLY / SUBSTRATE (what people are spending real money on):
-  gpu_spot_h100_usd_per_hour, gpu_spot_a100_usd_per_hour  — GPU rental clearing prices
+  gpu_spot_h100_usd_per_hour, gpu_spot_a100_usd_per_hour  — Azure spot list prices per 8-GPU VM
+  nebius_spot_h200_usd, nebius_spot_blackwell_usd         — Nebius market spot prices per GPU-hour
   power_vs_spy_30d, gpu_basket_vs_spy_30d                 — utility/GPU-cloud stocks vs market
 
 Treat arxiv_ai_submissions (if present) as background research-supply, not heat.
@@ -49,6 +50,14 @@ Method:
 - Be honest: if data looks normal, score 30-50. Reserve 70+ for genuine intensity.
 - Note: gpu_spot_* indicators only exist forward from when the collector launched —
   short history is expected; weight them by momentum once you have ≥14 days.
+- nebius_spot_* are MARKET-DRIVEN preemptible prices (median across regions of the daily
+  average), repriced many times a day with capacity tightness. They are the most sensitive
+  supply signal here: rising = GPUs scarce (real demand), falling or sagging = slack. Prefer
+  them over the near-static Azure list prices for supply MOMENTUM. Nebius only switched to
+  market pricing on 2026-10-08, so these series start 2026-10-09; with fewer than ~7 days,
+  read the level relative to the other GPU prices rather than a trend. Blackwell (B200/B300)
+  is the current frontier; H200 tightening matters more than near-flat older generations.
+  Nebius is also in the GPU-cloud stock basket (NBIS): do not count one Nebius move twice.
 """
 
 OUTPUT_INSTRUCTION = """\
