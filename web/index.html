@@ -10,7 +10,7 @@
 <main>
   <header>
     <h1>AI Fantasy Index</h1>
-    <p class="sub">Daily 0–100 score for AI-market heat, scored by Claude on early indicators. Plotted against a basket of AI stocks (rebased to 100).</p>
+    <p class="sub">Daily 0–100 score for AI-market heat, scored by Claude on early indicators. Plotted against equal-weight baskets of AI-related stocks (each = 100 at the start).</p>
   </header>
 
   <section class="latest">
@@ -29,6 +29,10 @@
     <canvas id="main-chart"></canvas>
   </section>
 
+  <section class="baskets">
+    <div id="basket-legend"></div>
+    <label class="toggle"><input type="checkbox" id="show-tickers"> show individual stocks</label>
+  </section>
   <section class="components">
     <h3>Indicator sub-scores (latest)</h3>
     <canvas id="components-chart"></canvas>

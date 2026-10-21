@@ -65,3 +65,14 @@ footer a { color: var(--muted); }
   .latest { grid-template-columns: 1fr; }
   .score-num { font-size: 48px; }
 }
+
+/* Basket legend under the main chart */
+.baskets { margin: -8px 0 24px; padding: 10px 14px; font-size: 12px; color: #8b949e;
+           display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; }
+#basket-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; flex: 1 1 auto; }
+#basket-legend span { white-space: nowrap; }
+#basket-legend i { display: inline-block; width: 10px; height: 3px; border-radius: 2px;
+                   vertical-align: middle; margin-right: 5px; }
+#basket-legend b { color: #e6edf3; font-weight: 600; margin-right: 4px; }
+.baskets .toggle { cursor: pointer; white-space: nowrap; }
+@media (max-width: 640px) { #basket-legend span { white-space: normal; } }
