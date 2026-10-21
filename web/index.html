@@ -43,5 +43,45 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 <script src="app.js"></script>
+<!-- Bezoekmeting (GA4) — laadt pas na toestemming. -->
+<div id="lc-consent" style="display:none;position:fixed;left:0;right:0;bottom:0;z-index:2147483000;flex-wrap:wrap;gap:.75rem;align-items:center;justify-content:center;padding:.9rem 1.1rem;background:#15181c;color:#f2f4f7;font:14px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;box-shadow:0 -2px 14px rgba(0,0,0,.3)">
+  <span style="max-width:56ch">Deze site meet bezoek met Google&nbsp;Analytics. Dat gebeurt alleen als je daarmee instemt; weiger je, dan wordt er niets geplaatst en niets doorgestuurd.</span>
+  <span style="display:flex;gap:.5rem;flex:0 0 auto">
+    <button type="button" data-lc-deny style="cursor:pointer;border:1px solid #4b525c;border-radius:6px;background:transparent;color:#f2f4f7;padding:.45rem .9rem;font:inherit">Weigeren</button>
+    <button type="button" data-lc-allow style="cursor:pointer;border:1px solid #2f6f4f;border-radius:6px;background:#2f6f4f;color:#fff;padding:.45rem .9rem;font:inherit">Accepteren</button>
+  </span>
+</div>
+<script>
+(function () {
+  var KEY = 'lc-consent', ID = 'G-9P4MFZLC12';
+  function laadGA() {
+    if (window.__lcGA) return;
+    window.__lcGA = 1;
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://www.googletagmanager.com/gtag/js?id=' + ID;
+    document.head.appendChild(s);
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function () { window.dataLayer.push(arguments); };
+    window.gtag('js', new Date());
+    window.gtag('config', ID);
+  }
+  var keuze = null;
+  try { keuze = localStorage.getItem(KEY); } catch (e) { /* private modus */ }
+  if (keuze === 'granted') { laadGA(); return; }
+  var balk = document.getElementById('lc-consent');
+  if (keuze === 'denied' || !balk) return;
+  // Zichtbaar maken en verbergen via style.display: het hidden-attribuut verliest
+  // van de inline display-regel op deze balk.
+  balk.style.display = 'flex';
+  function kies(waarde) {
+    try { localStorage.setItem(KEY, waarde); } catch (e) { /* niets te bewaren */ }
+    balk.style.display = 'none';
+    if (waarde === 'granted') laadGA();
+  }
+  balk.querySelector('[data-lc-allow]').addEventListener('click', function () { kies('granted'); });
+  balk.querySelector('[data-lc-deny]').addEventListener('click', function () { kies('denied'); });
+})();
+</script>
 </body>
 </html>

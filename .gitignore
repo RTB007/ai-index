@@ -9,3 +9,5 @@ web/data.json
 *.egg-info/
 dist/
 build/
+*.bak*
+data/
